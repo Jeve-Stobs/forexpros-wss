@@ -1,53 +1,48 @@
-
+use futures::prelude::*;
+use rand::Rng;
+use std::time::Duration;
 /// # Logic test: access to wss server
-/// 
+///
 /// # Expectaion
-/// 
+///
 /// json data from wss server.
-/// 
+///
 /// # Raw events
-/// 
+///
 /// Subscription to server
 ///     ["{\"_event\":\"bulk-subscribe\",\"tzID\":8,\"message\":\"pid-1058142:%%pid-8873:%%pid-8839:%%pid-169:%%pid-166:%%pid-14958:%%pid-44336:%%pid-8827:%%pid-1:%%pid-2:%%pid-3:%%pid-5:%%pid-7:%%pid-9:%%pid-10:%%pid-945629:%%pid-1065395:%%pid-8830:%%pid-8984:%%pidTechSumm-1:%%pidTechSumm-2:%%pidTechSumm-3:%%pidTechSumm-5:%%pidTechSumm-7:%%pidTechSumm-9:%%pidTechSumm-10:%%pidExt-1058142:%%isOpenExch-1053:%%isOpenExch-1:%%isOpenExch-2:%%isOpenPair-8873:%%isOpenPair-8839:%%isOpenPair-44336:%%isOpenPair-8827:%%cmt-1-5-1058142:%%domain-1:\"}"]
 ///     ["{\"_event\":\"UID\",\"UID\":0}"]
-/// 
+///
 /// Keep-alive message to server
 ///     ["{\"_event\":\"heartbeat\",\"data\":\"h\"}"]
-/// 
+///
 /// Keep-alive response from server
 ///     a["{\"_event\":\"heartbeat\",\"data\":\"h\"}"]
- 
-use tokio::{
-    self,
-    time,
-};
+use tokio::{self, time};
 use tokio_tungstenite;
-use rand::Rng;
-use futures::prelude::*;
-use std::time::Duration;
 
 #[test]
-fn test_access_to_server ( /*pid: 'static &str*/ ) {
-	let pair_id = "945629";	// BTC/USD
-	//let pair_id = "8984";	// HK50 future
+fn test_access_to_server(/*pid: 'static &str*/) {
+    let pair_id = "945629"; // BTC/USD
+                            //let pair_id = "8984";	// HK50 future
 
-	let mut rnd = rand::thread_rng ( );
+    let mut rnd = rand::thread_rng();
 
-	let url = format ! ( "wss://stream2{:02}.forexpros.com/echo/{:03}/{:08}/websocket",
-		//1 + rnd.gen::<u16> ( ) % 280,
-		rnd.gen::<u8> ( ) % 100,
-		rnd.gen::<u16> ( ) % 1000,
-		rnd.gen::<u64> ( ) % 1_0000_0000
-	);
+    let url = format!(
+        "wss://stream2{:02}.forexpros.com/echo/{:03}/{:08}/websocket",
+        //1 + rnd.gen::<u16> ( ) % 280,
+        rnd.gen::<u8>() % 100,
+        rnd.gen::<u16>() % 1000,
+        rnd.gen::<u64>() % 1_0000_0000
+    );
 
-	println ! ( "{}", &url );
+    println!("{}", &url);
 
-	// https://stackoverflow.com/questions/61752896/how-to-create-a-dedicated-threadpool-for-cpu-intensive-work-in-tokio
-	let rt_main = tokio::runtime::Runtime::new ( ).unwrap ( );
-	let rt_heartbeat = rt_main
-		.handle ( ).clone ( );
+    // https://stackoverflow.com/questions/61752896/how-to-create-a-dedicated-threadpool-for-cpu-intensive-work-in-tokio
+    let rt_main = tokio::runtime::Runtime::new().unwrap();
+    let rt_heartbeat = rt_main.handle().clone();
 
-	rt_main
+    rt_main
 		.block_on ( async {
 			let client = tokio_tungstenite::connect_async (
 				&url
